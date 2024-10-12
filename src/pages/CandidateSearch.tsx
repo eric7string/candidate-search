@@ -1,34 +1,33 @@
+// CandidateSearch.tsx
+
 import { useState, useEffect } from 'react';
-import { searchGithub, searchGithubUser } from '../api/API';
-import { Candidate } from '../interfaces/Candidate.interface'; // Adjust the path as necessary
+import { searchGithub, searchGithubUser } from '../api/API'; // Correct casing for API import
+import { Candidate } from '../interfaces/Candidate.interface'; // Correct casing for interface import
 
 const CandidateSearch = () => {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Function to fetch a random user
-  const fetchRandomCandidate = async () => {
+  const fetchCandidate = async () => {
     setLoading(true);
     try {
+      // Fetch a random user list
       const users = await searchGithub();
       if (users.length > 0) {
-        for (const randomUser of users) {
-          const candidateData = await searchGithubUser(randomUser.login);
-          setCandidate(candidateData); // Set candidate regardless of filled fields
-          break; // Exit after finding the first user
-        }
+        // Fetch detailed information of the first user
+        const candidateData = await searchGithubUser(users[0].login);
+        setCandidate(candidateData); // Set the candidate data
       } else {
-        setCandidate(null);
+        setCandidate(null); // Handle case when no candidates are found
       }
     } catch (error) {
       console.error('Error fetching candidate:', error);
       setCandidate(null);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
-  // Function to save candidate to localStorage
+  // Function to save the candidate to localStorage
   const saveCandidate = () => {
     if (candidate) {
       const savedCandidates = localStorage.getItem('savedCandidates');
@@ -38,13 +37,18 @@ const CandidateSearch = () => {
       if (!candidateExists) {
         candidatesArray.push(candidate);
         localStorage.setItem('savedCandidates', JSON.stringify(candidatesArray));
+        console.log('Candidate saved to localStorage:', candidate);
+      } else {
+        console.log('Candidate already exists in saved candidates.');
       }
-      fetchRandomCandidate();
+
+      fetchCandidate(); // Fetch a new candidate after saving
     }
   };
 
+  // Fetch a candidate when the component mounts
   useEffect(() => {
-    fetchRandomCandidate();
+    fetchCandidate();
   }, []);
 
   if (loading) {
@@ -57,41 +61,36 @@ const CandidateSearch = () => {
 
   return (
     <main>
-     
-      {/* Centered Header */}
-      <h1>Candidate Search</h1>
-
       {/* Candidate Card */}
+      <h1>Candidate Search</h1>
       <div style={styles.card}>
         <img src={candidate.avatar_url} alt="Avatar" style={styles.avatar} />
         <div style={styles.cardDetails}>
-          <h2 style={styles.name}>
-            {candidate.name || 'Unknown Name'} <span style={styles.username}>({candidate.login})</span>
-          </h2>
+          <h2>{candidate.name || 'Unknown Name'} ({candidate.login})</h2>
           <p><strong>Location:</strong> {candidate.location || 'Unknown Location'}</p>
-          <p><strong>Email:</strong> <a href={`mailto:${candidate.email}`} style={styles.email}>{candidate.email || 'Unknown Email'}</a></p>
+          <p><strong>Email:</strong> {candidate.email || 'Unknown Email'}</p>
           <p><strong>Company:</strong> {candidate.company || 'Unknown Company'}</p>
           <p><strong>Bio:</strong> {candidate.bio || 'No bio available'}</p>
         </div>
       </div>
 
-      {/* Circular Buttons below the card */}
+      {/* Buttons */}
       <div style={styles.buttonContainer}>
-        <button style={styles.skipButton} onClick={fetchRandomCandidate}>
+        <button style={styles.skipButton} onClick={fetchCandidate}>
           &minus;
         </button>
         <button style={styles.saveButton} onClick={saveCandidate}>
-          &#43;
+          &#43; 
         </button>
       </div>
     </main>
   );
 };
 
-// Inline Styles for card and buttons
+// Inline styles for card and buttons
 const styles = {
   card: {
-    border: '1px solid #ddd',
+    border: '5px solid black', // Black border around the card
     borderRadius: '15px', // Rounded corners
     padding: '20px',
     maxWidth: '400px',
@@ -107,20 +106,10 @@ const styles = {
     marginTop: '10px',
   },
   avatar: {
-    borderRadius: '50%',
-    width: '150px',
-    height: '150px',
+    borderRadius: '15px',
+    width: '250px',
+    height: '250px',
     marginBottom: '16px',
-  },
-  name: {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-  },
-  username: {
-    fontStyle: 'italic',
-  },
-  email: {
-    color: '#646cff', // Matches the link color in the provided CSS
   },
   buttonContainer: {
     marginTop: '20px',
@@ -155,7 +144,5 @@ const styles = {
     justifyContent: 'center', // Center horizontally
   },
 };
-
-
 
 export default CandidateSearch;
